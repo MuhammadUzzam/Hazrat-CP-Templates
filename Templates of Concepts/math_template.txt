@@ -1,0 +1,325 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+#define int long long
+#define vi vector<int>
+#define vvi vector<vector<int>>
+
+// =====================
+// Constants
+// =====================
+const int mod=1e9+7;
+const int MAXN=2000001; // for nCr (2*n safe)
+
+// =====================
+// modular helpers
+// =====================
+// normalize in [0, mod-1]
+int normalize(int x){
+    x%=mod;
+    if(x<0) x+=mod;
+    return x;
+}
+
+// binary exponentiation
+int binexp(int a,int b){
+    a=normalize(a);
+    int res=1;
+    while(b){
+        if(b&1) res=res*a%mod;
+        a=a*a%mod;
+        b>>=1;
+    }
+    return res;
+}
+// binexp computes (a^b) % mod for any a and b>=0 (negative b loops forever)
+// If mod is prime and gcd(a, mod) = 1, then modular inverse of a is: ((a%mod)^(mod-2)) % mod
+// modular inverse (mod must be prime)
+int inv(int a){
+    return binexp(a,mod-2);
+}
+
+// =====================
+// GCD / LCM
+// =====================
+// gcd(x,y) = gcd(x-y,y)
+// If x.y is divisible by a.b then y must be divisible by a.b/gcd(a.b,x)
+int gcdll(int a,int b){
+    return gcd(a,b); // std::gcd (C++17), always non-negative
+}
+
+int lcmll(int a,int b){
+    return a/gcdll(a,b)*b;
+}
+
+// =====================
+// Extract bits from numbers 
+// =====================
+string bits(int it){
+    bitset<64> bits(it);
+    string ans=bits.to_string();
+    return ans;
+}
+// a ^ b = a + b - 2 * (a & b) 
+// result of a ^ b and a + b have same parity
+
+// =====================
+// Factorials + nCr
+// =====================
+int fact[MAXN],invfact[MAXN];
+
+void init_nCr(){
+    fact[0]=1;
+    for(int i=1;i<MAXN;i++)
+        fact[i]=fact[i-1]*i%mod;
+    invfact[MAXN-1]=inv(fact[MAXN-1]);
+    for(int i=MAXN-2;i>=0;i--)
+        invfact[i]=invfact[i+1]*(i+1)%mod;
+}
+
+int nCr(int n,int r){
+    if(r<0 || r>n) return 0;
+    return fact[n]*invfact[r]%mod*invfact[n-r]%mod;
+}
+
+// 'n' stars and 'k-1' bars
+// x1 + x2 + ... + xk = n, xi >= 0
+int stars_bars(int n,int k){
+    return nCr(n+k-1,k-1);
+    // or nCr(n+k-1,n)
+}
+
+// x1 + x2 + ... + xk = n, xi >= 1
+int stars_bars_positive(int n,int k){
+    return nCr(n-1,k-1);
+}
+
+// xi >= 0  → C(n+k-1, k-1)
+// xi >= 1  → C(n-1, k-1) → C((n-k)+k-1, k-1)
+// xi >= L  → C((n-L*k)+k-1, k-1) 
+// if 'L' is different for every 'xi' then replace L*k of above equation 
+// with sum of 'L' of every 'xi'
+
+// =====================
+// nPr (permutations)
+// =====================
+int nPr(int n,int r){
+    if(r<0 || r>n) return 0;
+    return fact[n]*invfact[n-r]%mod;
+}
+
+// =====================
+// Prefix factorial inverse (rare but useful)
+// =====================
+// inv[i] = modular inverse of i
+int invNum[MAXN];
+
+void init_inv(){
+    invNum[1]=1;
+    for(int i=2;i<MAXN;i++)
+        invNum[i]=mod-(mod/i)*invNum[mod%i]%mod;
+}
+
+// =====================
+// Sieve (primes)
+// =====================
+const int SIEVE_N=1e6+5;
+vector<int> primes;
+vector<bool> isPrime(SIEVE_N,true);
+
+void sieve(){
+    isPrime[0]=isPrime[1]=false;
+    for(int i=2;i*i<SIEVE_N;i++){
+        if(isPrime[i]){
+            for(int j=i*i;j<SIEVE_N;j+=i)
+                isPrime[j]=false;
+        }
+    }
+    for(int i=2;i<SIEVE_N;i++)
+        if(isPrime[i])
+            primes.push_back(i);
+}
+
+// =====================
+// Linear Sieve (SPF)
+// =====================
+// spf[x] = smallest prime factor of x, built in O(N)
+const int SPF_N=1e6+5;
+int spf[SPF_N];
+vector<int> lp_primes;
+
+void linear_sieve(){
+    for(int i=2;i<SPF_N;i++){
+        if(spf[i]==0){
+            spf[i]=i;
+            lp_primes.push_back(i);
+        }
+        for(int p:lp_primes){
+            if(p>spf[i] || i*p>=SPF_N) break;
+            spf[i*p]=p;
+        }
+    }
+}
+
+// prime factorization using spf in O(log x), x < SPF_N
+vector<int> factorize_spf(int x){
+    vector<int> f;
+    while(x>1){
+        f.push_back(spf[x]);
+        x/=spf[x];
+    }
+    return f;
+}
+
+// =====================
+// Fast prime check
+// =====================
+bool is_prime(int n){
+    if(n<=1) return false;
+    if(n<=3) return true;
+    if(n%2==0 || n%3==0) return false;
+    for(int i=5;i*i<=n;i+=6)
+        if(n%i==0 || n%(i+2)==0)
+            return false;
+    return true;
+}
+
+// =====================
+// Prime factorization
+// =====================
+vector<int> factorize(int n){
+    vector<int> f;
+    for(int i=2;i*i<=n;i++){
+        while(n%i==0){
+            f.push_back(i);
+            n/=i;
+        }
+    }
+    if(n>1) f.push_back(n);
+    return f;
+}
+
+// =====================
+// MEX
+// =====================
+int mex(vector<int>& a){
+    int n=a.size();
+    vector<bool> seen(n+1,false); // mex of n numbers is always <= n
+    for(int x:a) if(x>=0 && x<=n) seen[x]=true;
+    int m=0;
+    while(seen[m]) m++;
+    return m;
+}
+
+// =====================
+// Sum of digits
+// =====================
+int sum_digits(int n){
+    int s=0;
+    while(n){
+        s+=n%10;
+        n/=10;
+    }
+    return s;
+}
+
+// =====================
+// Matrix Exponentiation
+// =====================
+struct Matrix{
+    int n,m;
+    vector<vector<int>> a;
+    Matrix(int n,int m):n(n),m(m),a(n,vector<int>(m,0)){}
+    static Matrix identity(int n){
+        Matrix I(n,n);
+        for(int i=0;i<n;i++) I.a[i][i]=1;
+        return I;
+    }
+};
+Matrix multiply(const Matrix& A,const Matrix& B){
+    Matrix C(A.n,B.m);
+    for(int i=0;i<A.n;i++){
+        for(int k=0;k<A.m;k++){
+            if(A.a[i][k]==0) continue;
+            for(int j=0;j<B.m;j++)
+                C.a[i][j]=(C.a[i][j]+A.a[i][k]*B.a[k][j])%mod;
+        }
+    }
+    return C;
+}
+Matrix matpow(Matrix A,int p){
+    Matrix res=Matrix::identity(A.n);
+    while(p){
+        if(p&1) res=multiply(res,A);
+        A=multiply(A,A);
+        p>>=1;
+    }
+    return res;
+}
+
+// =====================
+// Extended GCD
+// =====================
+int extgcd(int a,int b,int& x,int& y){
+    if(b==0){
+        x=1;
+        y=0;
+        return a;
+    }
+    int x1,y1;
+    int g=extgcd(b,a%b,x1,y1);
+    x=y1;
+    y=x1-(a/b)*y1;
+    return g;
+}
+
+/* Divisibility Rules (CP Quick Check) 
+2 → last_digit % 2 == 0 
+3 → (sum_of_digits % 3) == 0 
+4 → (last_two_digits % 4) == 0 
+5 → last_digit % 5 == 0 // (0 or 5) 
+6 → (n % 2 == 0) && (sum_of_digits % 3 == 0) 
+8 → (last_three_digits % 8) == 0 
+9 → (sum_of_digits % 9) == 0 
+10 → last_digit % 10 == 0 // last digit = 0 
+11 → ((sum_odd_positions - sum_even_positions) % 11) == 0 
+25 → (last_two_digits % 25) == 0 // possible endings: 00, 25, 50, 75 */
+
+// =====================
+// Generate Subsets
+// =====================
+vvi generateSubsets(vi& a){
+    int n=a.size();
+    vvi subsets;
+    for(int i=0;i<(1<<n);++i){
+        vi curr;
+        for(int j=0;j<n;++j){
+            if(i&(1<<j))
+                curr.push_back(a[j]);
+        }
+        subsets.push_back(curr);
+    }
+    return subsets;
+}
+
+// Calculating array size constraints.
+/*
+Let's say we have to use a vector of 50000 * 500 size
+so we calculate it like that:
+First multiply 50000 * 500 = 25000000 then multiply it 
+with data type of vector like 8 for long long, 4 for int etc. Then divide answer by 1000000 to get the size in MBs
+the array will take. A sample is shown below:
+25000000 * 8 = 200000000
+200000000 / 1000000 = 200 MB
+the array will take.
+*/
+// Perfect Squares have odd number of divisors.
+
+void solve(){
+}
+
+signed main(){
+    ios::sync_with_stdio(false);cin.tie(nullptr);
+    int t=1;cin>>t;
+    while(t--) solve();
+}

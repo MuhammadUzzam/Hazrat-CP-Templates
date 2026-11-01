@@ -5,6 +5,3 @@ Themecp for practice.
 Cp consists of speed solving and how hard you solved.
 "brilliant" is the website for math related problems.
 The ultimate topic list is the topics need to master for cp.
-Class timings:
-10:30 to 12:30
-2:30 to 4:30
